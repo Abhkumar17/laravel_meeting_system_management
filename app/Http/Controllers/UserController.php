@@ -7,15 +7,31 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Session;
+use Illuminate\Support\Facades\Session;
 class UserController extends Controller
 {
+    public function home()
+    {
+        if (Auth::check()) {
+            return view('home');
+        }else {
+            
+            return redirect('/');
+        }
+        return view('/');
+    }
     public function loadLogin()
     {
-        //return view('register');
+        if (Auth::check()) {
+            return redirect('/home');
+        }
+        return view('login');
     }
     public function loadRegister()
     {
+        if (Auth::check()) {
+            return redirect('/home');
+        }
         return view('register');
     }
 
@@ -27,7 +43,7 @@ class UserController extends Controller
             'password' => 'required|min:6|confirmed',
         ]);
 
-        DB::table('users')->insert([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
@@ -35,5 +51,29 @@ class UserController extends Controller
         return redirect()
             ->back()
             ->with('message', 'Registration has been succesfully');
+    }
+
+    public function userLogin(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        $userCredential = $request->only('email','password');
+
+        if (Auth::attempt($userCredential)) {
+            return redirect('/home');
+        }else {
+            return redirect()
+            ->back()
+            ->with('error', 'User credential are not match');
+        }
+    }
+    public function logout(Request $request)
+    {
+        $request->session()->flash();
+        Auth::logout();
+        return redirect('/');
     }
 }
